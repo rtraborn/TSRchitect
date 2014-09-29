@@ -1,0 +1,291 @@
+_______________ TSRchitect version 1.0 ________________________
+
+Template CAGE Mapping Pipeline
+
+Objective: this example demonstrates how to take CAGE data- in this case human data from the ENCODE repository- and map the tags to the human reference genome.
+
+First, you'll need to have the following programs installed:
+
+Trimmomatic (for trimming the adapter sequences; http://www.usadellab.org/cms/index.php?page=trimmomatic)
+bwa (for aligning the reads to the reference genome and converting between formats; http://bio-bwa.sourceforge.net)
+Samtools (for file conversion between bam and sam; git clone git://github.com/samtools/samtools.git)  
+
+Instructions for how to download and install both packages are provided in documentation section of the links provided.
+
+____Downloading the CAGE Dataset from the online database_____
+
+First, let's create a folder that we'll work in:
+
+>$ mkdir CAGE_Pipeline
+
+Now, let's enter the pipeline:
+
+>$ cd CAGE_Pipeline
+
+Let's download the file (this should take 3-5 minutes, depending on the speed of your internet connection)
+
+>$ wget http://hgdownload.cse.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeRikenCage/wgEncodeRikenCageK562CellPapRawDataRep1.fastq.gz
+
+Now we need to uncompress it:
+
+>$ gunzip wgEncodeRikenCageK562CellPapRawDataRep1.fastq.gz 
+
+The data should look something like this:
+
+>$ head wgEncodeRikenCageK562CellPapRawDataRep1.fastq 
+@HWUSI-EAS733_0011:1:1:1075:5886#0/1
+AGATAGCAGGAGGTAGNTGCGTGGCTAACGGAGAAA
++HWUSI-EAS733_0011:1:1:1075:5886#0/1
+eeec`fffffcee\\bBbbb\a^cca^YaaLL^^TX
+@HWUSI-EAS733_0011:1:1:1075:17408#0/1
+AGACAGCAGGGGGCTGNCTCGCCGTCGGCTGCCGGG
++HWUSI-EAS733_0011:1:1:1075:17408#0/1
+fffffffffdcccfdbBcac``b^Zda`dbdfedad
+@HWUSI-EAS733_0011:1:1:1076:5722#0/1
+AGACAGCAGGCCCTTTNCTCAGCTGCCGCCAAGGTG
+
+Now that we have successfully downloaded the dataset, we can proceed with the first step, which is adapter-trimming using Trimmomatic.
+
+I) Removing adapter sequences:
+
+We need to create an Illumina and CAGE adapter file (if other sequencing platforms are used, please replace adpt1-6 with the platform-specific adapters)
+
+>$ nano illumina-std-adapters
+
+Ppaste in the following set of sequences, as listed below:
+
+>CAGE1
+CCACCGACAGGTTCAGAGTTCTACAGAGACAGCAG
+>CAGE2
+CCACCGACAGGTTCAGAGTTCTACAGAGACAGCAGG
+>adpt1
+GATCGGAAGAGCGGTTCAGCAGGAATGCCGAG
+>adpt2
+ACACTCTTTCCCTACACGACGCTCTTCCGATCT
+>adpt3
+AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT
+>adpt4
+CAAGCAGAAGACGGCATACGAGATCGGTCTCGGCATTCCTGCTGAACCGCTCTTCCGATCT
+>adpt5
+ACACTCTTTCCCTACACGACGCTCTTCCGATCT
+>adpt6
+CGGTCTCGGCATTCCTGCTGAACCGCTCTTCCGATCT
+
+Return to working directory (ensure that the .fastq file you dow is located here or the following commands will not work).
+
+>$ cd ..
+
+Loading java (this is only necessary if your analysis system doesn't have java loaded).
+
+>$ module load java
+
+Now we need to run the Trimmomatic Command:
+
+>$ java -classpath /home/rtraborn/Trimmomatic/trimmomatic-0.27.jar org.usadellab.trimmomatic.TrimmomaticSE -phred64 wgEncodeRikenCageK562CytosolPapRawDataRep2.fastq CAGE_K562_Cyt_Raw_Rep2 ILLUMINACLIP:/home/rtraborn/Trimmomatic/CAGE_Illum_adapters_i.fasta:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 HEADCROP:10  MINLEN:24
+TrimmomaticSE: Started with arguments: -phred64 wgEncodeRikenCageK562CytosolPapRawDataRep1.fastq CAGE_K562_Cyt_Raw_Rep2 ILLUMINACLIP:/home/rtraborn/Trimmomatic/CAGE_Illum_adapters_i.fasta:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 HEADCROP:10 MINLEN:24
+Using Clipping Sequence: 'ACACTCTTTCCCTACACGACGCTCTTCCGATCT'
+Using Clipping Sequence: 'CGGTCTCGGCATTCCTGCTGAACCGCTCTTCCGATCT'
+Using Clipping Sequence: 'AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT'
+Using Clipping Sequence: 'CAAGCAGAAGACGGCATACGAGATCGGTCTCGGCATTCCTGCTGAACCGCTCTTCCGATCT'
+Using Clipping Sequence: 'GATCGGAAGAGCGGTTCAGCAGGAATGCCGAG'
+Using Clipping Sequence: 'ACACTCTTTCCCTACACGACGCTCTTCCGATCT'
+Using Clipping Sequence: 'CCACCGACAGGTTCAGAGTTCTACAGAGACAGCAG'
+Using Clipping Sequence: 'CCACCGACAGGTTCAGAGTTCTACAGAGACAGCAGG'
+ILLUMINACLIP: Using 0 prefix pairs, 8 forward/reverse sequences, 0 forward only sequences, 0 reverse only sequences
+Input Reads: 19776639 Surviving: 17017516 (86.05%) Dropped: 2759123 (13.95%)
+TrimmomaticSE: Completed successfully
+
+Here's what the file should look like:
+
+>$ head CAGE_K562_Cyt_Raw_Rep1.fastq 
+@HWUSI-EAS733_0011:1:1:1075:5886#0/1
+AGGTAGNTGCGTGGCTAACGGAGA
++HWUSI-EAS733_0011:1:1:1075:5886#0/1
+cee\\bBbbb\a^cca^YaaLL^^
+@HWUSI-EAS733_0011:1:1:1075:17408#0/1
+GGGCTGNCTCGCCGTCGGCTGCCGG
++HWUSI-EAS733_0011:1:1:1075:17408#0/1
+cccfdbBcac``b^Zda`dbdfeda
+@HWUSI-EAS733_0011:1:1:1076:5722#0/1
+CCCTTTNCTCAGCTGCCGCCAAGG
+
+II) Mapping the trimmed CAGE tags using bwa 
+
+Creating the BWA Index for the CAGE Analysis Pipeline
+
+Downloading the human genome sequence by chromosome in Fasta Format. For other species, please replace with the links to the appropriate genome 
+
+Downloading the somatic chromosome sequences:
+
+>$ for i in $(seq 22); do wget http://hgdownload.cse.ucsc.edu/goldenPath/hg19/chromosomes/chr$i.fa.gz; done
+--2013-05-16 14:20:17--  http://hgdownload.cse.ucsc.edu/goldenPath/hg19/chromosomes/chr1.fa.gz
+Resolving hgdownload.cse.ucsc.edu (hgdownload.cse.ucsc.edu)... 128.114.119.163
+Connecting to hgdownload.cse.ucsc.edu (hgdownload.cse.ucsc.edu)|128.114.119.163|:80... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 73773666 (70M) [application/x-gzip]
+
+Now downloading the sex chromosome sequences:
+
+>$ for i in $(X Y); do wget http://hgdownload.cse.ucsc.edu/goldenPath/hg19/chromosomes/chr$i.fa.gz; done
+--2013-05-16 14:22:47--  http://hgdownload.cse.ucsc.edu/goldenPath/hg19/chromosomes/chrX.fa.gz
+Resolving hgdownload.cse.ucsc.edu (hgdownload.cse.ucsc.edu)... 128.114.119.163
+Connecting to hgdownload.cse.ucsc.edu (hgdownload.cse.ucsc.edu)|128.114.119.163|:80... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 49278128 (47M) [application/x-gzip]
+Saving to: `chrX.fa.gz'
+...
+
+Concatenating the files into a single file:
+
+>$ cat *.fa.gz > human_23.chrs.fa.gz
+
+#unzipping the concatenated file
+>$ gunzip human_23_chrs.fa.gz 
+
+Checking the number of lines in the human_23_chrs.fa.gz file:
+
+>$ wc -l human_23_chrs.fa.gz 
+3690431 human_23_chrs.fa.gz
+
+These files should now be in your WD
+
+>$ ls
+chr10.fa.gz  chr14.fa.gz  chr18.fa.gz  chr21.fa.gz  chr4.fa.gz  chr8.fa.gz  human_23_chrs.fa
+chr11.fa.gz  chr15.fa.gz  chr19.fa.gz  chr22.fa.gz  chr5.fa.gz  chr9.fa.gz  
+chr12.fa.gz  chr16.fa.gz  chr1.fa.gz   chr2.fa.gz   chr6.fa.gz  chrX.fa.gz
+chr13.fa.gz  chr17.fa.gz  chr20.fa.gz  chr3.fa.gz   chr7.fa.gz  chrY.fa.gz
+
+Creating the bwa index file:
+
+>$ bwa index -a bwtsw human_chr_files/human_23_chrs.fa
+[bwa_index] Pack FASTA... 38.76 sec
+[bwa_index] Reverse the packed sequence... 9.64 sec
+[bwa_index] Construct BWT for the packed sequence...
+[BWTIncConstructFromPacked] 10 iterations done. 99999988 characters processed.
+[BWTIncConstructFromPacked] 20 iterations done. 199999988 characters processed.
+[BWTIncConstructFromPacked] 30 iterations done. 299999988 characters processed.
+...
+[BWTIncConstructFromPacked] 290 iterations done. 2899999988 characters processed.
+[BWTIncConstructFromPacked] 300 iterations done. 2999999988 characters processed.
+[BWTIncConstructFromPacked] 310 iterations done. 3092426244 characters processed.
+[bwt_gen] Finished constructing BWT in 311 iterations.
+[bwa_index] 476.56 seconds elapse.
+[bwa_index] Construct BWT for the reverse packed sequence...
+[BWTIncConstructFromPacked] 10 iterations done. 99999988 characters processed.
+[BWTIncConstructFromPacked] 20 iterations done. 199999988 characters processed.
+[...
+[BWTIncConstructFromPacked] 290 iterations done. 2899999988 characters processed.
+[BWTIncConstructFromPacked] 300 iterations done. 2999999988 characters processed.
+[BWTIncConstructFromPacked] 310 iterations done. 3092426244 characters processed.
+[bwt_gen] Finished constructing BWT in 311 iterations.
+[bwa_index] 147.44 seconds elapse.
+[bwa_index] Update BWT... 2.84 sec
+[bwa_index] Update reverse BWT... 5.71 sec
+[bwa_index] Construct SA from BWT and Occ... 103.96 sec
+[bwa_index] Construct SA from reverse BWT and Occ... 54.68 sec
+
+>$ ls -khl K562_Cyt_Rep1.sai 
+-rw-r--r--. 1 rtraborn users 597M May 20 20:30 K562_Cyt_Rep1.sai
+
+Converting from sai to sam format using bwa:
+
+>$ bwa samse human_chr_files/human_23_chrs.fa K562_Cyt_Rep1.sai CAGE_K562_Cyt_Raw_Rep1.fastq > K562_Cyt_Rep1_aln-se.sam 
+...
+[bwa_aln_core] 22806528 sequences have been processed.
+[bwa_aln_core] convert to sequence coordinate... 2.49 sec
+[bwa_aln_core] refine gapped alignments... 0.52 sec
+[bwa_aln_core] print alignments... 0.38 sec
+[bwa_aln_core] 22957042 sequences have been processed.
+
+Using Samtools to convert between formats (sam to bed)
+
+More conversion: we now will create an ".fai" index file using samtools
+
+samtools faidx ./human_chr_files/human_23_chrs.fa 
+
+Need to convert sam to bam format. We can also use samtools to do this.
+
+>$ samtools view -bt human_chr_files/human_23_chrs.fa.fai K562_Cyt_Rep1_aln-se.sam > K562_Cyt_Rep1_aln-se.bam
+[sam_header_read2] 24 sequences loaded.
+
+>$ wc -l K562_Cyt_Rep1_aln-se.bam 
+3614608 K562_Cyt_Rep1_aln-se.bam
+
+Coverting from sam to bed format:
+
+Use the 'sam2bed.py' script (written by Aaron Quinlan; https://github.com/arq5x) included in tsrchitect/
+
+Making the file executable:
+>$ chmod +x sam2bed.py 
+
+Converting the file:
+
+>$ python sam2bed.py -s K562_Cyt_Rep1_aln-se.sam > K562_Cyt_Rep1_aln-se.bed
+
+This is what the file should look like once the script has completed:
+
+>$ head K562_Cyt_Rep1_aln-se.bed
+chr11	108093793	108093817	HWUSI-EAS733_0011:1:1:1075:5886#0	1	+
+chr6	166796443	166796468	HWUSI-EAS733_0011:1:1:1075:17408#0	1	-
+chr15	69745157	69745181	HWUSI-EAS733_0011:1:1:1076:5722#0	1	+
+chr14	23299096	23299121	HWUSI-EAS733_0011:1:1:1077:4013#0	1	+
+chr19	18682667	18682691	HWUSI-EAS733_0011:1:1:1078:13509#0	0	+
+chr3	197677063	197677088	HWUSI-EAS733_0011:1:1:1078:2461#0	1	+
+chr13	29233278	29233303	HWUSI-EAS733_0011:1:1:1078:3768#0	0	+
+chr2	70315082	70315107	HWUSI-EAS733_0011:1:1:1079:7658#0	0	+
+chr20	36073933	36073958	HWUSI-EAS733_0011:1:1:1079:15804#0	0	-
+chr4	48863144	48863168	HWUSI-EAS733_0011:1:1:1079:19189#0	0	+
+
+Converting between bed and gff:
+
+Using a conversion script from the 'galaxy-central' bitbucket repository named 'bed_to_gff.py': 
+
+The file is included in /tsrchitect folder, but is available from Galaxy Central at: https://bitbucket.org/galaxy/galaxy-central/src/61b09dc1dff2/tools/filters/bed_to_gff_converter.py
+
+>$ python bed_to_gff.py K562_Cyt_Rep1_aln-se.bed K562_Cyt_Rep1_aln-se.gff [Ed's note: need a converter between bed and gff3, not gff2!]
+21668986 lines converted to GFF version 2.  
+>$ head K562_Cyt_Rep1_aln-se.gff
+##gff-version 2
+##bed_to_gff_converter.py
+
+chr11	bed2gff	HWUSI-EAS733_0011:1:1:1075:5886#0	108093794	108093817	1	+	HWUSI-EAS733_0011:1:1:1075:5886#0;
+chr6	bed2gff	HWUSI-EAS733_0011:1:1:1075:17408#0	166796444	166796468	1	-	HWUSI-EAS733_0011:1:1:1075:17408#0;
+chr15	bed2gff	HWUSI-EAS733_0011:1:1:1076:5722#0	69745158	69745181	1	+	HWUSI-EAS733_0011:1:1:1076:5722#0;
+chr14	bed2gff	HWUSI-EAS733_0011:1:1:1077:4013#0	23299097	23299121	1	+	HWUSI-EAS733_0011:1:1:1077:4013#0;
+chr19	bed2gff	HWUSI-EAS733_0011:1:1:1078:13509#0	18682668	18682691	0	+	HWUSI-EAS733_0011:1:1:1078:13509#0;
+chr3	bed2gff	HWUSI-EAS733_0011:1:1:1078:2461#0	197677064	197677088	1	+	HWUSI-EAS733_0011:1:1:1078:2461#0;
+chr13	bed2gff	HWUSI-EAS733_0011:1:1:1078:3768#0	29233279	29233303	0	+	HWUSI-EAS733_0011:1:1:1078:3768#0;
+
+
+Replacing the third column of the file to give a description of its contents. We can use a few bash commands to do that:
+>$ tail -n+3 K562_Cyt_Rep1_aln-se.gff > K562_Cyt_Rep1.gff
+>$ cat K562_Cyt_Rep1.gff | awk -F"\t" 'OFS="\t"{ if ($3~/^HWUSI-EAS733/) {$3 = "CAGE_K562_cyp_rep1"}; print }' > K562_Cyt_Rep1_aln.gff 
+>$ head K562_Cyt_Rep1_aln.gff
+
+chr11 bed2gff CAGE_K562_cyp_rep1 108093794 108093817 1 + . HWUSI-EAS733_0011:1:1:1075:5886#0;
+chr6 bed2gff CAGE_K562_cyp_rep1 166796444 166796468 1 - . HWUSI-EAS733_0011:1:1:1075:17408#0;
+chr15 bed2gff CAGE_K562_cyp_rep1 69745158 69745181 1 + . HWUSI-EAS733_0011:1:1:1076:5722#0;
+chr14 bed2gff CAGE_K562_cyp_rep1 23299097 23299121 1 + . HWUSI-EAS733_0011:1:1:1077:4013#0;
+chr19 bed2gff CAGE_K562_cyp_rep1 18682668 18682691 0 + . HWUSI-EAS733_0011:1:1:1078:13509#0;
+chr3 bed2gff CAGE_K562_cyp_rep1 197677064 197677088 1 + . HWUSI-EAS733_0011:1:1:1078:2461#0;
+chr13 bed2gff CAGE_K562_cyp_rep1 29233279 29233303 0 + . HWUSI-EAS733_0011:1:1:1078:3768#0;
+chr2 bed2gff CAGE_K562_cyp_rep1 70315083 70315107 0 + . HWUSI-EAS733_0011:1:1:1079:7658#0;
+chr20 bed2gff CAGE_K562_cyp_rep1 36073934 36073958 0 - . HWUSI-EAS733_0011:1:1:1079:15804#0;
+
+Now we have the mapped CAGE data in GFF format- we're ready to analyze it using TSRchitect!
+
+If you have any questions, please email me (Taylor Raborn) at rtraborn@indiana.edu
+
+----------------------------------REFERENCES CITED------------------------------------------
+
+Trimmomatic:
+Lohse M, Bolger AM, Nagel A, Fernie AR, Lunn JE, Stitt M, Usadel B. RobiNA: a user-friendly, integrated software solution for RNA-Seq-based transcriptomics. Nucleic Acids Res. 2012 Jul;40(Web Server issue):W622-7.
+
+bwa:
+Li H. and Durbin R. (2009) Fast and accurate short read alignment with Burrows-Wheeler Transform. Bioinformatics, 25:1754-60. 
+
+Samtools:
+Li H.*, Handsaker B.*, Wysoker A., Fennell T., Ruan J., Homer N., Marth G., Abecasis G., Durbin R. and 1000 Genome Project Data Processing Subgroup (2009) The Sequence alignment/map (SAM) format and SAMtools. Bioinformatics, 25, 2078-9. 
+
+Galaxy:
+Goecks, J, Nekrutenko, A, Taylor, J and The Galaxy Team. Galaxy: a comprehensive approach for supporting accessible, reproducible, and transparent computational research in the life sciences. Genome Biol. 2010 Aug 25;11(8):R86.

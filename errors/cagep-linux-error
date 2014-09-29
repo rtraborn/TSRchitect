@@ -1,0 +1,56 @@
+#R. Taylor Raborn
+#written on February 18, 2014
+
+Make sure your local repository of TSRchitect is updated before you attempt to reproduce this error.
+
+To install cagep, just do 'cd cagep; make SAMHDR=/path/to/samtools/dir'
+
+When testing cagep on my linux system, I produce the following error that I did not encounter when running the same commands on my local machine.
+
+Here's some system information about my machine (Gremlin3):
+
+rtraborn@gremlin3 ~) > uname -r #my linux kernel version number
+3.12.8-300.fc20.x86_64
+
+rtraborn@gremlin3 ~) > cat /etc/issue M #my distribution information
+Fedora release 20 (Heisenbug)
+Kernel \r on an \m (\l)
+
+rtraborn@gremlin3 ~) > cd tsrchitect/cagep/ #entering the cagep directory
+
+(11:36 rtraborn@gremlin3 cagep) > ls -lkhtra #you should see some of these files in your directory, especially {Makefile, CagepNodeVisitor.h/.c, and Cage_Haoec_Sample.sam}
+total 431M
+-rw-r--r--. 1 rtraborn users 2.1K Jul 26  2011 ucsc_gtf_to_gff3.pl
+drwxr-xr-x. 9 rtraborn users 4.0K Feb 13 11:19 ..
+-rw-r--r--. 1 rtraborn users  336 Feb 13 11:19 Makefile
+-rw-r--r--. 1 rtraborn users  743 Feb 13 11:19 CagepNodeVisitor.h
+-rw-r--r--. 1 rtraborn users 4.1K Feb 13 11:19 CagepNodeVisitor.c
+-rw-r--r--. 1 rtraborn users 8.5K Feb 13 11:19 cagep.c
+-rwxr-xr-x. 1 rtraborn users  24K Feb 13 11:32 cagep
+-rw-r--r--. 1 rtraborn users 129M Feb 13 13:53 Cage_Haoec_Sample.sam
+-rw-r--r--. 1 rtraborn users 147M Feb 13 14:14 chr1-2-cage.txt
+-r--r-xr-x. 1 rtraborn users   94 Feb 13 14:17 run_cagep.sh
+-rw-r--r--. 1 rtraborn users 156M Feb 13 14:20 chr1-2-cage-strand.txt
+-rw-r--r--. 1 rtraborn users    0 Feb 13 14:28 test_cagep_output.txt
+drwxr-xr-x. 3 rtraborn users 4.0K Feb 18 11:26 .
+drwxr-xr-x. 8 rtraborn users 4.0K Feb 18 11:33 .git
+
+rtraborn@gremlin3 cagep) > ./cagep -v Cage_Haoec_Sample.sam ../data/knownGene.gff3 > test_cagep_output.txt #running the cagep command #you can look in your /data directory beforehand to make sure it's there.
+warning: line 1 in file "../data/knownGene.gff3" does not begin with "##gff-version" or "##gvf-version", create "##gff-version 3" line automatically
+warning: seqid "chr6" on line 1 in file "../data/knownGene.gff3" has not been previously introduced with a "##sequence-region" line, create such a line automatically
+warning: seqid "chr17" on line 8 in file "../data/knownGene.gff3" has not been previously introduced with a "##sequence-region" line, create such a line automatically
+
+…...
+ create such a line automatically
+warning: seqid "chrUn_gl000214" on line 967983 in file "../data/knownGene.gff3" has not been previously introduced with a "##sequence-region" line, create such a line automatically
+warning: seqid "chrUn_gl000212" on line 984085 in file "../data/knownGene.gff3" has not been previously introduced with a "##sequence-region" line, create such a line automatically
+warning: seqid "chrUn_gl000241" on line 1051137 in file "../data/knownGene.gff3" has not been previously introduced with a "##sequence-region" line, create such a line automatically
+[cagep] loaded 82960 genes (from 60 sequences) into memory
+[samopen] SAM header is present: 24 sequences.
+Segmentation fault (core dumped)
+
+######
+
+
+Please let me know if you need more information to help debug this error.
+-Taylor

@@ -1,0 +1,97 @@
+##This file is to be updated to reflect the new cagep-compatible format (Krishna)
+
+cDNA/EST_handler_scripts README file
+--------------------------
+Version: 2.0
+Date: 11/07/2012
+Created by: Krishnakumar Sridharan* (As part of TSRchitect -- with Taylor Raborn* and Daniel Standage)
+--------------------------
+
+DESCRIPTION:
+
+These scripts parse cDNA/EST transcript datasets in order to perform the following tasks:
+	1) Perform Spliced Alignment using GeneSeqer(available at http://www.plantgdb.org/) OR GenomeThreader(available at http://www.genomethreader.org/)
+	2) Parse spliced alignment output and associate transcripts with annotated genes using a distance criterion
+	3) Create gene-associated-data (ClusterFormat) files which feed into the TSS-clustering/TSR-calculation algorithms
+
+--> IMPORTANT NOTE A: In the above workflow, step (1) can be computed by user using either the GeneSeqer/genomeThreader softwares, OR by running the "est_cdna_handler.pl" script with appropriate options
+--> IMPORTANT NOTE B: In the above workflow, steps 2 and 3 are performed by the script "gsq_gff_extractor.pl", which works on either the GeneSeqer OR GenomeThreader outputs
+
+-------------> Follow Analysis Methodology below
+
+ANALYSIS METHODOLOGY:
+
+Users have two workflow options that they can follow to analyze cDNA/EST datasets:
+
+        ---WORKFLOW OPTION A (RECOMMENDED)----
+        (A1) Download GeneSeqer OR GenomeThreader
+	(A2) Run "perl est_cdna_handler.pl" with the necessary parameters on cDNA/EST datasets (See cmd options using "perl est_cdna_handler.pl")
+        (A3) Feed output from step A2 into the TSS-clustering/TSR-calculation script
+
+	---WORKFLOW OPTION B----
+	(B1) Download and independently run GeneSeqer OR GenomeThreader with the necessary parameters on cDNA/EST datasets
+	(B2) Parse spliced alignment output(from B1) with annotated genes using "perl gsq_gff_extractor.pl" (See cmd options using "perl gsq_gff_extractor.pl")
+	(B3) Feed output from step B2 into the TSS-clustering/TSR-calculation script
+
+
+PRE-REQUISITES:
+
+	(i) GeneSeqer(available at http://www.plantgdb.org/) OR GenomeThreader (available at http://www.genomethreader.org/)
+	(ii) CPAN perl module "GetOpt::Long"
+
+
+COMPONENT SCRIPTS:
+
+ est_cdna_handler.pl
+ ===================
+
+        Program : est_cdna_handler.pl (perl interface for cDNA/EST_handler_scripts)
+        USAGE : perl est_cdna_handler.pl -trans <cDNA_EST_dataset> -seq <Nucleotide_sequence> -gff <GFF_annotation_file> -chrnum <Chromosome_number_of_sequence> [Other OPTIONAL/ADVANCED parameters]
+
+        EXAMPLE : perl est_cdna_handler.pl -trans EST_dataset_C_Merolae_Mod2002.fasta -seq c_merolae_chr01.fasta -gff c_merolae.gff -chrnum 1
+
+        #################################### Option List #######################################
+
+        MANDATORY parameters
+
+        -trans		Mandatory parameter. String. cDNA/EST transcript dataset to be used for spliced alignment.
+        -seq		Mandatory parameter. String. Nucleotide sequence to be used for spliced alignment.
+	-gff		Mandatory parameter. String. GFF format annotation file.
+	-chrnum		Mandatory parameter. String. Chromosome number of sequence input.
+
+        OPTIONAL/ADVANCED parameters
+
+        -gsq		Optional parameter. String. GeneSeqer output file; if a readymade GSQ file is provided, GeneSeqer is not run thereby reducing computational time. Default=Run GeneSeqer from scratch
+	-dist		Optional parameter. Integer. Distance from annotated gene start to be used for capturing relevant transcripts. Default=500
+	-locn		Optional parameter. String. Location of bin folder of GeneSeqer on system. Default="/usr/local/src/GENESEQER/bin/"
+	-species	Optional parameter. String. Species from which sequence is derived, for GeneSeqer Splice Site model. Default="generic"
+ 	-out		Optional parameter. String. Output file name. Default= Derived from sequence filename
+
+
+
+ gsq_gff_extractor.pl
+ ====================
+
+        PURPOSE: To associate 5'-Exon Start positions from GeneSeqer output with genes from GFF file
+
+        USAGE: perl gsq_gff_extractor.pl -gsq [GeneSeqer_output_file] -gth [GenomeThreader_output_file] -gff <GFF_annotation_file> -chrnum <Chromosome_number_of_sequence> -dist [Distance_from_annotated_gene_start_to_be_used_for_capturing_relevant_transcripts] -out [Cluster-format-file]
+
+	<>-Mandatory parameter		[]-Optional parameter
+
+
+ GeneSeqer
+ =========
+
+        PURPOSE: Used for performing spliced alignment given the transcript (cDNA/EST) sequences and the nucleotide sequence
+
+        USAGE: /bin/GeneSeqer -d <Transcript_dataset_file> -l <Nucleotide_sequence_file> -O <GeneSeqer_output_file>
+
+	NOTE: The transcript dataset needs to be quicky pre-processed using the "MakeArray" command within the GeneSeqer package,as "/bin/MakeArray <Transcript_dataset_file>"(Automatically done within est_cdna_handler.pl)
+
+
+ GenomeThreader
+ ==============
+
+	PURPOSE: Used for performing spliced alignment given the transcript (cDNA/EST) sequences and the nucleotide sequence
+
+        USAGE: /bin/gth -genomic <Nucleotide_sequence_file> -cdna <Transcript_dataset_file> -o <GenomeThreader_output_file>
