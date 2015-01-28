@@ -1,13 +1,6 @@
-
 # A wrapper which combines the clustering algorithm with the continuous distribution calculator	
-# Written on 4/11/12
-# Beta version 4/26/12 at 12:39AM
-# Included updates to vac_calc_i on 6/29/13-7/3/13 to comply with updated output from CAGEP
-# Added parameter countMin in TSR_Completev2 to remove genes that have less than the specified number of TSS.
-# Author: Taylor Raborn with Krishna Sridharan
-
 ###############################################################################
-TSR_Completev2 <- function(TSS_data,binWidth=10,count=1,cluster_Num=1,Draw=FALSE,print=FALSE, countMin=25) {
+tsrFind <- function(TSS_data,binWidth=10,count=1,cluster_Num=1,Draw=FALSE,print=FALSE, countMin=25) {
 	TSS_data[,2] -> genes_vector
 		length(genes_vector) -> n_genes
 		unique(genes_vector) -> unique_genes
@@ -29,7 +22,7 @@ TSR_Completev2 <- function(TSS_data,binWidth=10,count=1,cluster_Num=1,Draw=FALSE
 			length(minIndex)
 			unique_genes[minIndex] -> remove_names
 			#print(remove_names)
-			match(genes_vector,remove_names) -> remove_index #need to fix this line- need a set operation than permits duplicate values and overapping
+			match(genes_vector,remove_names) -> remove_index #
 			#print(head(remove_index))
 			#print(length(remove_index))
 			which(is.na(remove_index)) -> keep_index
@@ -38,7 +31,7 @@ TSR_Completev2 <- function(TSS_data,binWidth=10,count=1,cluster_Num=1,Draw=FALSE
 
 TSR_packagev2 <- function(TSS_data,gene=1,clusterNum=1,binWidth=10,count=1,draw=TRUE) {
 	library('moments')
-	options(scipen=999) #I'm just not a fan of scientific notation here
+	options(scipen=999) 
 
 	 var_calc_i <- function(x, gene, iterations=1000000) {
  		gene -> gene_name
@@ -60,7 +53,7 @@ TSR_packagev2 <- function(TSS_data,gene=1,clusterNum=1,binWidth=10,count=1,draw=
  				c(NA,1,this_centers,0,this_sizes,100,length(tss_vector)) -> table_array[,1]
  				}
  			else {
- 		xmeans_mod(tss_vector,ik = 2, iter.max = iterations, pr.proc = F, ignore.covar=T, merge.cls=F) -> xmeans_output
+ 		xmeans(tss_vector,ik = 2, iter.max = iterations, pr.proc = F, ignore.covar=T, merge.cls=F) -> xmeans_output
  		xmeans_output$centers -> this_centers
  		xmeans_output$cluster -> this_clusters
  		xmeans_output$centers -> this_centers
@@ -88,7 +81,6 @@ TSR_packagev2 <- function(TSS_data,gene=1,clusterNum=1,binWidth=10,count=1,draw=
 			}
 			}
 		rownames(table_array) <- c(gene_name,"Cluster Number","Cluster Centers","Cluster Variance","Cluster Size","Percentage of Total","Total Number of Clones") 
-		#var_out <- list(table=var.array,centers=var.array[3,],clusters=center.clusters,clust.string=cluster.list, tss=tss.array,variance=var.i,cluster.size=as.numeric(tss.table$size))
 		var_out <- list(table=table_array,centers=this_centers,clusters=this_clusters,clust.string=this_clusters,tss=this_tss,variance=table_array[4,],cluster.size=this_sizes)
 		class(var_out) = "clustering"
 		return(var_out)
@@ -100,13 +92,6 @@ TSR_packagev2 <- function(TSS_data,gene=1,clusterNum=1,binWidth=10,count=1,draw=
 		total.clusters <- x$clust.string #getting the numbered list of clusters for each TSS tag within the gene set
 		unique.clusters <- unique(total.clusters) #listing the total clusters within the gene set ##not sure if this command is necessary
 		c_size <- x$cluster.size #provides an array with the list of the number of tags in each cluster
-		#if (cluster=='max') {
-		#c_max <- max(c_size)
-		#max_pos <- which(c_size==c_max)
-		#max_TSS_pos <- which(total.clusters==max_pos)
-#	plot_TSSs <- x$tss[max_TSS_pos]
-#}
-		#else {
 		sort(c_size,decreasing=TRUE) -> cluster_sort #sorts c_size from largest to smallest number of tags in each cluster
 		#print(cluster_sort)
 		cluster_sort[cluster] -> cluster_pos #selecting the cluster with the largest number of tags
@@ -145,11 +130,6 @@ TSR_packagev2 <- function(TSS_data,gene=1,clusterNum=1,binWidth=10,count=1,draw=
  			}
 		which(total.clusters == this_TSS_pos) -> TSSs_pos #selecting the positions of the tags that belong to the largest cluster #there seems to be a problem with this line. Began debugging on 2/5/13 at 14:35
 		x$tss[TSSs_pos] -> plot_TSSs #selecting the actual tags that belong to the largest cluster from within the var_calc object
-		#print("Here are the TSSs")
-		#print(plot_TSSs)
-		#quantile(plot_TSSs,0.99) -> h_max
-		#quantile(plot_TSSs,0.01) -> h_min
-		#print(plot_TSSs) #for debugging
 		max(plot_TSSs) -> TSS_max #calculating the maximum TSS in the cluster
 		min(plot_TSSs) -> TSS_min #caclulating the minimum TSS in the cluster
 		abs(TSS_max-TSS_min) -> h_range #calculating the range value between the min and max TSS within the cluster
@@ -157,8 +137,6 @@ TSR_packagev2 <- function(TSS_data,gene=1,clusterNum=1,binWidth=10,count=1,draw=
 		h_range/binwidth -> break_n #defining the number of breaks to be in the histogram 
 		#print(binwidth)
 		if ((break_n > binwidth) == TRUE) { #the regular condition, whereby the number of breaks is larger than the binwidth
-			#print(break_n)
-			#hist(plot_TSSs,xlim=c(h_min,h_max),breaks=break_n,col="blue2") -> output_hist
 			hist(plot_TSSs,breaks=break_n,plot=FALSE) -> output_hist 
 		}
 		if ((break_n <= binwidth) == TRUE) { ##this is a problem area. Please look into this further #2.5.13
