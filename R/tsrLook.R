@@ -1,34 +1,11 @@
 # A wrapper which combines the clustering algorithm with the continuous distribution calculator	
+# Written on 4/11/12
+# Beta version 4/26/12 at 12:39AM
+# Author: Taylor Raborn and Krishna Sridharan
 ###############################################################################
-tsrFind <- function(TSS_data,binWidth=10,count=1,cluster_Num=1,Draw=FALSE,print=FALSE, countMin=25) {
-	TSS_data[,2] -> genes_vector
-		length(genes_vector) -> n_genes
-		unique(genes_vector) -> unique_genes
-		length(unique_genes) -> len_unique
-		array(NA,c(len_unique,2)) -> gene_count_array
-		match(genes_vector,unique_genes) -> match_array
-		print("Calculating the number of TSS per gene in the dataset")
-			for (i in 1:len_unique) {
-				print(i)
-				1:len_unique -> len_array
-				len_array[i] -> this_gene
-				which(match_array==this_gene) -> gene_index
-				length(gene_index) -> gene_count_array[i,2]
-				unique_genes[i] -> gene_count_array[i,1]
-				}
-			as.numeric(gene_count_array[,2]) -> gene_counts
-			which(gene_counts<countMin) -> minIndex
-			length(minIndex)
-			unique_genes[minIndex] -> remove_names
-			match(genes_vector,remove_names) -> remove_index #
-			which(is.na(remove_index)) -> keep_index
-		TSS_data[keep_index,] -> TSS_data_i #keeping the rows from TSS_data that are more than the specified countMin value
-		print("Genes with less than 'countMin' removed from the dataset")
 
-tsrLook  <- function(TSS_data,gene=1,clusterNum=1,binWidth=10,count=1,draw=TRUE) {
+TSR_packagev2 <- function(TSS_data,gene=1,clusterNum=1,binWidth=10,count=1,draw=TRUE) {
 	library('moments')
-	options(scipen=999) 
-
 	 var_calc_i <- function(x, gene, iterations=1000000) {
  		gene -> gene_name
  		which(x[,2]==gene) -> this_gene_index
@@ -49,7 +26,7 @@ tsrLook  <- function(TSS_data,gene=1,clusterNum=1,binWidth=10,count=1,draw=TRUE)
  				c(NA,1,this_centers,0,this_sizes,100,length(tss_vector)) -> table_array[,1]
  				}
  			else {
- 		xmeans(tss_vector,ik = 2, iter.max = iterations, pr.proc = F, ignore.covar=T, merge.cls=F) -> xmeans_output
+ 		xmeans_mod(tss_vector,ik = 2, iter.max = iterations, pr.proc = F, ignore.covar=T, merge.cls=F) -> xmeans_output
  		xmeans_output$centers -> this_centers
  		xmeans_output$cluster -> this_clusters
  		xmeans_output$centers -> this_centers
@@ -77,10 +54,21 @@ tsrLook  <- function(TSS_data,gene=1,clusterNum=1,binWidth=10,count=1,draw=TRUE)
 			}
 			}
 		rownames(table_array) <- c(gene_name,"Cluster Number","Cluster Centers","Cluster Variance","Cluster Size","Percentage of Total","Total Number of Clones") 
+		#var_out <- list(table=var.array,centers=var.array[3,],clusters=center.clusters,clust.string=cluster.list, tss=tss.array,variance=var.i,cluster.size=as.numeric(tss.table$size))
 		var_out <- list(table=table_array,centers=this_centers,clusters=this_clusters,clust.string=this_clusters,tss=this_tss,variance=table_array[4,],cluster.size=this_sizes)
 		class(var_out) = "clustering"
 		return(var_out)
 		}
+	# Author: R. Taylor Raborn
+# Date: Written on 3/20/2012	
+# Modified on 4/26/2012 
+# Modified again on 2/6/2013 and 2/18-19/2013
+# Modified to be compatible with CAGEP- 6/29/13-7/1/13
+# change made for the case 'breaks > binwidth
+# superimpose the fitted PDF
+# Given a cluster object, detects the largest cluster, then plots and draws a density function 
+###############################################################################
+
 	cluster_PDF <- function(x,cluster=clusterNum,binwidth=5) {
 		if (is(x)!="clustering") {
 			stop("Object must be of class 'clustering'")
@@ -88,6 +76,13 @@ tsrLook  <- function(TSS_data,gene=1,clusterNum=1,binWidth=10,count=1,draw=TRUE)
 		total.clusters <- x$clust.string #getting the numbered list of clusters for each TSS tag within the gene set
 		unique.clusters <- unique(total.clusters) #listing the total clusters within the gene set ##not sure if this command is necessary
 		c_size <- x$cluster.size #provides an array with the list of the number of tags in each cluster
+		#if (cluster=='max') {
+		#c_max <- max(c_size)
+		#max_pos <- which(c_size==c_max)
+		#max_TSS_pos <- which(total.clusters==max_pos)
+#	plot_TSSs <- x$tss[max_TSS_pos]
+#}
+		#else {
 		sort(c_size,decreasing=TRUE) -> cluster_sort #sorts c_size from largest to smallest number of tags in each cluster
 		#print(cluster_sort)
 		cluster_sort[cluster] -> cluster_pos #selecting the cluster with the largest number of tags
@@ -126,6 +121,11 @@ tsrLook  <- function(TSS_data,gene=1,clusterNum=1,binWidth=10,count=1,draw=TRUE)
  			}
 		which(total.clusters == this_TSS_pos) -> TSSs_pos #selecting the positions of the tags that belong to the largest cluster #there seems to be a problem with this line. Began debugging on 2/5/13 at 14:35
 		x$tss[TSSs_pos] -> plot_TSSs #selecting the actual tags that belong to the largest cluster from within the var_calc object
+		#print("Here are the TSSs")
+		#print(plot_TSSs)
+		#quantile(plot_TSSs,0.99) -> h_max
+		#quantile(plot_TSSs,0.01) -> h_min
+		#print(plot_TSSs) #for debugging
 		max(plot_TSSs) -> TSS_max #calculating the maximum TSS in the cluster
 		min(plot_TSSs) -> TSS_min #caclulating the minimum TSS in the cluster
 		abs(TSS_max-TSS_min) -> h_range #calculating the range value between the min and max TSS within the cluster
@@ -133,6 +133,8 @@ tsrLook  <- function(TSS_data,gene=1,clusterNum=1,binWidth=10,count=1,draw=TRUE)
 		h_range/binwidth -> break_n #defining the number of breaks to be in the histogram 
 		#print(binwidth)
 		if ((break_n > binwidth) == TRUE) { #the regular condition, whereby the number of breaks is larger than the binwidth
+			#print(break_n)
+			#hist(plot_TSSs,xlim=c(h_min,h_max),breaks=break_n,col="blue2") -> output_hist
 			hist(plot_TSSs,breaks=break_n,plot=FALSE) -> output_hist 
 		}
 		if ((break_n <= binwidth) == TRUE) { ##this is a problem area. Please look into this further #2.5.13
@@ -312,11 +314,11 @@ tsrLook  <- function(TSS_data,gene=1,clusterNum=1,binWidth=10,count=1,draw=TRUE)
 		plot(xhist,yhist,type="s",ylim=c(0,max(yhist,yfit)),main="Normal pdf and histogram")
 		lines(xfit,yfit,col='red2')
 	}
-	TSS_clustered <- var_calc_i(TSS_data_i,gene) #creating a clustering object using var_calc_i
+	TSS_clustered <- var_calc_i(TSS_data,gene) #creating a clustering object using var_calc
 	PDF_object <- cluster_PDF(TSS_clustered,binwidth=binWidth) #isolating the major cluster of TSSs according to PDF_object, with a bidwidth of the selected size
-	#print(str(PDF_object))
+	print(str(PDF_object))
 	hist_peak <- hist_peak_find(PDF_object,count) #detect the longest continuously occupied stretch of bins in the cluster
-	#print(hist_peak)
+	print(hist_peak)
 	segment_vector2 <- hist_peak$vector #inserting the calculated contiguous string of values
 	vec_range <- range(hist_peak$array[,2])
 	if (length(vec_range>1)){
@@ -329,6 +331,20 @@ tsrLook  <- function(TSS_data,gene=1,clusterNum=1,binWidth=10,count=1,draw=TRUE)
 	}
 	segment_index <- which(segment_vector2 >= vec_min & segment_vector2 <= vec_max )
 	segment_vector3 <- segment_vector2[segment_index]
+	#print(segment_vector2)
+	#print(segment_vector3)
+	#print(hist_peak$array)
+	#print(hist_vector)
+	#hist_Array <- hist_peak$array
+	#hist_array_len <- length(hist_Array[,1])
+	#segment_min <- hist_Array[1,2]
+	#segment_max <- hist_Array[hist_array_len,2]
+	#print(segment_min)
+	#print(segment_max)
+	#segment_vector <- hist_vector[(hist_vector > segment_min) & (hist_vector < segment_max)] 
+	#hist_seg1 <- hist_vector[segment_1]
+	#segment_2 <- which(hist_seg1<=segment_max)
+	#segment_vector <- hist_vector[segment_index]
 	TSR_shape <- kurtosis(segment_vector3)
 	if(is.na(TSR_shape)) {
 		c('Completely_Peaked') -> TSR_shape
@@ -346,26 +362,5 @@ tsrLook  <- function(TSS_data,gene=1,clusterNum=1,binWidth=10,count=1,draw=TRUE)
 	}
 	return(TSR_output)
 }
-	TSS_data_i[,2] -> genes_vector
-	unique(genes_vector) -> genesUnique
-	length(genesUnique) -> ngenes
-	TSR_array <- array(NA,c(ngenes,8))
-	colnames(TSR_array) <- c('Shape','TSR_Breadth','Peak_Count','Total_Count','Tag_Ratio','Midpoint','Start','End')
-	rownames(TSR_array) <- genesUnique
-	for (t in 1:ngenes) {
-		genesUnique[t] -> this_Gene
-		print(this_Gene)
-		tsrLook(TSS_data,this_Gene,cluster_Num,binWidth,count,Draw) -> TSR_out
-		TSR_out$shape -> TSR_array[t,1]
-		TSR_out$breadth -> TSR_array[t,2]
-		TSR_out$tag_count -> TSR_array[t,3]
-		TSR_out$total_count -> TSR_array[t,4]
-		TSR_out$Ratio -> TSR_array[t,5]
-		TSR_out$mid -> TSR_array[t,6]
-		TSR_out$range -> TSR_array[t,7:8]
-	}
-	if (print) {
-		write.table(TSR_array,file="TSR_output.txt",sep="\t",row.names=TRUE,col.names=TRUE)
-	}
-	return(TSR_array)
-}
+
+
