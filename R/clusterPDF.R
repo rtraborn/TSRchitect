@@ -1,4 +1,4 @@
-cluster_PDF <- function(x,cluster=clusterNum,binwidth=5) {
+clusterPDF <- function(x,cluster=clusterNum,binwidth=5) {
 		if (is(x)!="clustering") {
 			stop("Object must be of class 'clustering'")
 		}
