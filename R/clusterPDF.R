@@ -44,8 +44,8 @@ clusterPDF <- function(x,cluster=clusterNum,binwidth=5) {
 		if ((break_n > binwidth) == TRUE) { #the regular condition, whereby the number of breaks is larger than the binwidth
 			hist(plot_TSSs,breaks=break_n,plot=FALSE) -> output_hist 
 		}
-		if ((break_n <= binwidth) == TRUE) { ##this is a problem area. Please look into this further #2.5.13
-			binwidth -> break_n #not sure why we need this #revisit
+		if ((break_n <= binwidth) == TRUE) { 
+			binwidth -> break_n 
 			hist(plot_TSSs,breaks=break_n,plot=FALSE) -> output_hist
 		}
 		dimnames(x$table)[[1]][1] -> gene_name

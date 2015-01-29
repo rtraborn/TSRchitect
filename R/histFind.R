@@ -1,4 +1,4 @@
-hist_peak_find <- function(x,count=1) {
+histFind <- function(x,count=1) {
 	hist_obj <- x$hist # the 'hist' object that we will be retrieving data from
 	hist_table <- x$table
 	hist_counts <- hist_obj$counts # the 'counts' vector that our algorithm is focused on analyzing
