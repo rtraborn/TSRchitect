@@ -1,5 +1,5 @@
 --------------------------------------------------------------------------------
-Copyright (c) 2011-2014, R. Taylor Raborn
+Copyright (c) 2011-2015, R. Taylor Raborn
                          Krishnakumar Sridharan
                          Daniel S. Standage
 			 Indiana University
@@ -68,7 +68,7 @@ package.
 --------------------------------------------------------------------------------
 III. Prerequisites
 --------------------------------------------------------------------------------
-  * R 2.0.0 or higher
+  * R 3.0.0 or higher
   * Common development tools (C compiler, Make, etc)
   * GenomeTools (genome analysis software package | genometools.org; found at https://github.com/genometools/genometools)
 
