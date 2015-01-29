@@ -1,4 +1,4 @@
- var_calc_i <- function(x, gene, iterations=1000000) {
+varCalc <- function(x, gene, iterations=1000000) {
  		gene -> gene_name
  		which(x[,2]==gene) -> this_gene_index
  		x[this_gene_index,3:5] -> tss_slice
@@ -18,7 +18,7 @@
  				c(NA,1,this_centers,0,this_sizes,100,length(tss_vector)) -> table_array[,1]
  				}
  			else {
- 		xmeans_mod(tss_vector,ik = 2, iter.max = iterations, pr.proc = F, ignore.covar=T, merge.cls=F) -> xmeans_output
+ 		xmeans(tss_vector,ik = 2, iter.max = iterations, pr.proc = F, ignore.covar=T, merge.cls=F) -> xmeans_output
  		xmeans_output$centers -> this_centers
  		xmeans_output$cluster -> this_clusters
  		xmeans_output$centers -> this_centers
@@ -46,7 +46,6 @@
 			}
 			}
 		rownames(table_array) <- c(gene_name,"Cluster Number","Cluster Centers","Cluster Variance","Cluster Size","Percentage of Total","Total Number of Clones") 
-		#var_out <- list(table=var.array,centers=var.array[3,],clusters=center.clusters,clust.string=cluster.list, tss=tss.array,variance=var.i,cluster.size=as.numeric(tss.table$size))
 		var_out <- list(table=table_array,centers=this_centers,clusters=this_clusters,clust.string=this_clusters,tss=this_tss,variance=table_array[4,],cluster.size=this_sizes)
 		class(var_out) = "clustering"
 		return(var_out)
