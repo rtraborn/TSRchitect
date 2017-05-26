@@ -20,15 +20,22 @@ install.packages(c("gtools","knitr"))
 
 ```{r eval=FALSE}
 source("http://bioconductor.org/biocLite.R")
-biocLite(c("AnnotationHub", "BiocGenerics", "BiocParallel", "ENCODExplorer", "GenomicAlignments", "GenomeInfoDb", "GenomicRanges", "IRanges", "methods", "Rsamtools", "rtracklayer", "S4Vectors", "SummarizedExperiment"))
+biocLite(c("AnnotationHub", "BiocGenerics", "BiocParallel", "ENCODExplorer", "GenomicAlignments", "GenomeInfoDb", "GenomicRanges", "IRanges", "Rsamtools", "rtracklayer", "S4Vectors", "SummarizedExperiment"))
 ```
 
 ## Obtaining TSRchitect
-Eventually, __TSRchitect__ will also be available as a
-[_Bioconductor_](http://bioconductor.org/) package.
+As of April 24th, 2017, __TSRchitect__ is available as a
+[_Bioconductor_](http://bioconductor.org/) package as part of the Bioconductor 3.5 release.
+Package information for __TSRchitect__ on the Bioconductor site is found [here](https://www.bioconductor.org/packages/release/bioc/html/TSRchitect.html).
 
-For now (and in general, for the latest development version), you can install
-__TSRchitect__ as follows (again, use root privileges on the install command for
+__TSRchitect__ can be installed directly from Bioconductor as follows:
+```{r eval=TRUE}
+source("http://bioconductor.org/biocLite.R")
+biocLite("TSRchitect")
+```
+
+Alternatively, for the latest development version, you can install
+__TSRchitect__ as follows from our github repository (again, use root privileges on the install command for
 system-wide installation):
 
 This repository contains two branches. The branch 'master' is our stable, submitted Bioconductor version, whereas our 'devel' branch contains recent development and additional files that are not found in the branch master.
