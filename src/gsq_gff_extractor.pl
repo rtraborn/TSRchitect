@@ -59,25 +59,25 @@ else
 open (OUTFILE, "> $outfile") or die ("Could not open $outfile!!");
 
 my ($est_id,$est_orient,$chr_id,$exon_start,$exon_end,$exon_orientation,$species_chr_id,$gene_orientation,$gene_start,$gene_end,$gene_id,$gene_chr);
-my (@exon_positions,@gff_coords,%est_start_to_est_ID,%est_start_to_est_orient,%est_start_to_chr,%start_to_id,%id_to_allstarts,%gsq_start_orientation,%gff_start_orientation,%exon_start_end,%gff_start_chr) = ();
+my (@all_unique_id_starts,@exon_positions,@gff_coords,%est_start_to_est_ID,%est_start_to_est_orient,%est_start_to_chr,%start_to_id,%id_to_allstarts,%gsq_start_orientation,%gff_start_orientation,%exon_start_end,%gff_start_chr) = ();
 
 while(<INFILE_TRANS>)
 {
 #Sequence    1:   4, from 1 to 300000, both strands analyzed.
- if(/^Sequence.*:\t*\s*([a-zA-Z:;\-\._0-9]+),\s*from.*$/)
+ if(/^Sequence.*:\t*\s*(.+),\s*from.*$/)
  {
   #print "$1\n";
   $chr_id = $1;
  }
 # EST sequence     12 -strand   942 n (File: 42517803-)
- #if(/^EST sequence.*strand.*\(File:\s*(\d+)([+-])*\)$/) replaced with VB's correction
- if(/^EST sequence.*strand.*\(File:\s*([^\s]*)([+-])\)$/)
+# EST sequence      8 +strand  3727 n (File: PdomTSAr1.2-008727+)
+ if(/^EST sequence.*strand.*\(File:\s*(.*)([+-]+)\)$/)
  {
   #print "$1\n";
   $est_id = $1; 
   $est_orient = $2;
  }
- if(/^\s*Exon\s+1\s+(\d+)\s+(\d+)\s+\(\s+(\d+)\s+n\);\s+cDNA\s+(\d+)\s+(\d+)\s+\(\s+(\d+)\s+n\);\s+score:\s+(\d*\.\d+)\s*\n$/)       ##### Read in all the 5'-First Exons from the GeneSeqer output
+ if(/^\s*Exon\s+1\s+(\d+)\s+(\d+)\s+\(\s*(\d+)\s+n\);\s+cDNA\s+(\d+)\s+(\d+)\s+\(\s*(\d+)\s+n\);\s+score:\s+(\d*\.\d+)\s*\n$/)       ##### Read in all the 5'-First Exons from the GeneSeqer output
  {
  # print "$1\t$2\t$3\t$4\t$5\t$6\t$7\n";
   if($1>$2)
@@ -92,12 +92,15 @@ while(<INFILE_TRANS>)
    $exon_end = $2;
    $exon_orientation = "+";
   }
-  $gsq_start_orientation{$exon_start}=$exon_orientation; 
-  $exon_start_end{$exon_start} = $exon_end;
-  $est_start_to_est_ID{$exon_start} = $est_id;
-  $est_start_to_est_orient{$exon_start} = $est_orient;
-  $est_start_to_chr{$exon_start} = $chr_id;
+  
+  my $id_string = $exon_start."_CustomSep_".$est_id;			#### Multiple ESTs can match at one position, or at multiple positions as well. This complicates the hash key.
+  $gsq_start_orientation{$id_string}=$exon_orientation; 
+  $exon_start_end{$id_string} = $exon_end;
+  $est_start_to_est_ID{$id_string} = $est_id;
+  $est_start_to_est_orient{$id_string} = $est_orient;
+  $est_start_to_chr{$id_string} = $chr_id;
   push(@exon_positions, $exon_start);
+  push(@all_unique_id_starts,$id_string);
  }
 }
 
@@ -122,23 +125,25 @@ if (defined $infile_gff)
   }
  }
 
- for(my $i=0;$i<=$#exon_positions;$i++)      ####### Associate 5'-transcript ends with gene IDs based on distance from 5'-annotated gene start and orientation
+ for(my $i=0;$i<=$#all_unique_id_starts;$i++)      ####### Associate 5'-transcript ends with gene IDs based on distance from 5'-annotated gene start and orientation
  {
   for (my $j=0;$j<=$#gff_coords;$j+=2)
   {
    if($gff_start_orientation{$gff_coords[$j]} eq '+')
    {
-    if($exon_positions[$i]>($gff_coords[$j]-$dist-1) && $exon_positions[$i]<($gff_coords[$j]+$dist+1) && $est_start_to_chr{$exon_positions[$i]} eq $gff_start_chr{$gff_coords[$j]})
+    my @start_and_id = split(/_CustomSep_/, $all_unique_id_starts[$i]);
+    if($start_and_id[0]>($gff_coords[$j]-$dist-1) && $start_and_id[0]<($gff_coords[$j]+$dist+1) && $est_start_to_chr{$all_unique_id_starts[$i]} eq $gff_start_chr{$gff_coords[$j]})
     {
-     print OUTFILE "chr$est_start_to_chr{$exon_positions[$i]}\t$exon_positions[$i]\t$exon_positions[$i]\tgi|$est_start_to_est_ID{$exon_positions[$i]}\t.\t$est_start_to_est_orient{$exon_positions[$i]}\n";
+     print OUTFILE "$est_start_to_chr{$all_unique_id_starts[$i]}\t$start_and_id[0]\t$start_and_id[0]\tgi|$est_start_to_est_ID{$all_unique_id_starts[$i]}\t.\t$est_start_to_est_orient{$all_unique_id_starts[$i]}\n";
      last;
     }
    }
    elsif($gff_start_orientation{$gff_coords[$j]} eq '-')
    {
-    if($exon_positions[$i]>($gff_coords[$j+1]-$dist-1) && $exon_positions[$i]<($gff_coords[$j+1]+$dist+1) && $est_start_to_chr{$exon_positions[$i]} eq $gff_start_chr{$gff_coords[$j]})
+    my @start_and_id = split(/_CustomSep_/, $all_unique_id_starts[$i]);
+    if($start_and_id[0]>($gff_coords[$j+1]-$dist-1) && $start_and_id[0]<($gff_coords[$j+1]+$dist+1) && $est_start_to_chr{$all_unique_id_starts[$i]} eq $gff_start_chr{$gff_coords[$j]})
     {
-     print OUTFILE "chr$est_start_to_chr{$exon_positions[$i]}\t$exon_positions[$i]\t$exon_positions[$i]\tgi|$est_start_to_est_ID{$exon_positions[$i]}\t.\t$est_start_to_est_orient{$exon_positions[$i]}\n";
+     print OUTFILE "$est_start_to_chr{$all_unique_id_starts[$i]}\t$start_and_id[0]\t$start_and_id[0]\tgi|$est_start_to_est_ID{$all_unique_id_starts[$i]}\t.\t$est_start_to_est_orient{$all_unique_id_starts[$i]}\n";
      last;
     }
    }
@@ -147,9 +152,11 @@ if (defined $infile_gff)
 } 		## if defined infile_gff loop
 else
 {
- for(my $i=0;$i<=$#exon_positions;$i++)
+ for(my $k=0;$k<=$#all_unique_id_starts;$k++)
  {
-  print OUTFILE "chr$est_start_to_chr{$exon_positions[$i]}\t$exon_positions[$i]\t$exon_positions[$i]\tgi|$est_start_to_est_ID{$exon_positions[$i]}\t.\t$est_start_to_est_orient{$exon_positions[$i]}\n";
+  my @start_and_id = split(/_CustomSep_/, $all_unique_id_starts[$k]);
+  #print "$start_and_id[0]\t$start_and_id[1]\n"; 
+  print OUTFILE "$est_start_to_chr{$all_unique_id_starts[$k]}\t$start_and_id[0]\t$start_and_id[0]\tgi|$est_start_to_est_ID{$all_unique_id_starts[$k]}\t.\t$est_start_to_est_orient{$all_unique_id_starts[$k]}\n";
  } 
 }
 close INFILE_TRANS;
