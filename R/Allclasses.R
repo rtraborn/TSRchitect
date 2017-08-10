@@ -47,8 +47,6 @@ setClass(Class="tssObject",
 #'
 #' @return a new \emph{tssObject} is returned to the user's workspace.
 #'
-#' @import methods
-#'
 #' @examples
 #' new.tssObj <- tssObject(title="Example")
 #'
