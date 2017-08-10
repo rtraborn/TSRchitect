@@ -13,7 +13,7 @@
 #' @import BiocGenerics
 #'
 #' @examples
-#' tssObjectExample <- cDNAtoBED(gsqFile="extdata/gsq.At_GenomicSeq.fasta", fileName="testOut.bed")
+#' tssObjectExample <- cDNAtoBED(gsqFile="gsq.At_GenomicSeq.fasta", fileName="testOut.bed")
 #'
 #' @export
 #' @rdname cDNAtoBED-methods
@@ -31,9 +31,11 @@ setMethod("cDNAtoBED",
 
               message("... cDNAtoBED ...")
 
+              gsq_extractor <- system.file("extdata", "gsq_gff_extractor.pl", package="TSRchitect")
+              
               arg1 <- paste("-gsq", gsqFile)
               arg2 <- paste("-out", fileName)
-              cmd <- paste("perl", "gsq_gff_extractor.pl", arg1, arg2)
+              cmd <- paste("perl", gsq_extractor, arg1, arg2)
               system(cmd)
 
               message("The file ", fileName,
