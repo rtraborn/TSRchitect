@@ -58,7 +58,7 @@ else
 }
 open (OUTFILE, "> $outfile") or die ("Could not open $outfile!!");
 
-my ($est_id,$est_orient,$chr_id,$exon_start,$exon_end,$exon_orientation,$species_chr_id,$gene_orientation,$gene_start,$gene_end,$gene_id,$gene_chr);
+my ($est_id,$est_orient,$chr_id,$exon_start,$exon_start2, $exon_end,$exon_orientation,$species_chr_id,$gene_orientation,$gene_start,$gene_end,$gene_id,$gene_chr);
 my (@all_unique_id_starts,@exon_positions,@gff_coords,%est_start_to_est_ID,%est_start_to_est_orient,%est_start_to_chr,%start_to_id,%id_to_allstarts,%gsq_start_orientation,%gff_start_orientation,%exon_start_end,%gff_start_chr) = ();
 
 while(<INFILE_TRANS>)
@@ -77,30 +77,40 @@ while(<INFILE_TRANS>)
   $est_id = $1; 
   $est_orient = $2;
  }
- if(/^\s*Exon\s+1\s+(\d+)\s+(\d+)\s+\(\s*(\d+)\s+n\);\s+cDNA\s+(\d+)\s+(\d+)\s+\(\s*(\d+)\s+n\);\s+score:\s+(\d*\.\d+)\s*\n$/)       ##### Read in all the 5'-First Exons from the GeneSeqer output
+ if(/^\s*Exon\s+1\s+(\d+)\s+(\d+)\s+\(\s*(\d+)\s+n\);\s+cDNA\s+(\d+)\s+(\d+)\s+\(\s*(\d+)\s+n\);\s+score:\s+(\d*\.\d+)\s*\n$/)  ##### Read in all the 5'-First Exons from the GeneSeqer output
  {
  # print "$1\t$2\t$3\t$4\t$5\t$6\t$7\n";
   if($1>$2)
   {
-   $exon_start = $1;
+   $exon_start = $1-1;
+   $exon_start2 = $1;
    $exon_end = $2;
    $exon_orientation = "-";
+   my $id_string = $exon_start."_CustomSep_".$exon_start2."_CustomSep_".$est_id;	 #### Multiple ESTs can match at one position, or at multiple positions as well. This complicates the hash key.
+   $gsq_start_orientation{$id_string}=$exon_orientation; 
+   $exon_start_end{$id_string} = $exon_end;
+   $est_start_to_est_ID{$id_string} = $est_id;
+   $est_start_to_est_orient{$id_string} = $est_orient;
+   $est_start_to_chr{$id_string} = $chr_id;
+   push(@exon_positions, $exon_start);
+   push(@all_unique_id_starts,$id_string);
   }
   elsif ($2>$1)
   {
    $exon_start = $1;
+   $exon_start2= $1+1;
    $exon_end = $2;
    $exon_orientation = "+";
-  }
-  
-  my $id_string = $exon_start."_CustomSep_".$est_id;			#### Multiple ESTs can match at one position, or at multiple positions as well. This complicates the hash key.
-  $gsq_start_orientation{$id_string}=$exon_orientation; 
-  $exon_start_end{$id_string} = $exon_end;
-  $est_start_to_est_ID{$id_string} = $est_id;
-  $est_start_to_est_orient{$id_string} = $est_orient;
-  $est_start_to_chr{$id_string} = $chr_id;
-  push(@exon_positions, $exon_start);
-  push(@all_unique_id_starts,$id_string);
+   #my $id_string = $exon_start."_CustomSep_".$est_id;	 #### Multiple ESTs can match at one position, or at multiple positions as well. This complicates the hash key.
+   my $id_string = $exon_start."_CustomSep_".$exon_start2."_CustomSep_".$est_id;	 #### Multiple ESTs can match at one position, or at multiple positions as well. This complicates the hash key.
+   $gsq_start_orientation{$id_string}=$exon_orientation; 
+   $exon_start_end{$id_string} = $exon_end;
+   $est_start_to_est_ID{$id_string} = $est_id;
+   $est_start_to_est_orient{$id_string} = $est_orient;
+   $est_start_to_chr{$id_string} = $chr_id;
+   push(@exon_positions, $exon_start);
+   push(@all_unique_id_starts,$id_string);
+  }  
  }
 }
 
@@ -111,7 +121,7 @@ if (defined $infile_gff)
  {
   if(/^[a-zA-z_]*(\d+)\s+([A-Z_a-z0-9]+)\s+(gene)\s+(\d+)\s+(\d+)\s+\.\s+([+-]*).*ID=([A-Za-z0-9_]+);.*$/)  #### GFF file format, check for compatibility 
   {												#### Read in all the gene start, end and IDs from gff file
- #  print "$1\t$2\t$3\t$4\t$5\t$6\t$7\n";
+   print "$1\t$2\t$3\t$4\t$5\t$6\t$7\n";
     $gene_chr = $1;
     $gene_orientation = $6;
     $gene_start = $4;
@@ -131,7 +141,8 @@ if (defined $infile_gff)
   {
    if($gff_start_orientation{$gff_coords[$j]} eq '+')
    {
-    my @start_and_id = split(/_CustomSep_/, $all_unique_id_starts[$i]);
+       my @start_and_id = split(/_CustomSep_/, $all_unique_id_starts[$i]);
+       #this is where I need to make the shift
     if($start_and_id[0]>($gff_coords[$j]-$dist-1) && $start_and_id[0]<($gff_coords[$j]+$dist+1) && $est_start_to_chr{$all_unique_id_starts[$i]} eq $gff_start_chr{$gff_coords[$j]})
     {
      print OUTFILE "$est_start_to_chr{$all_unique_id_starts[$i]}\t$start_and_id[0]\t$start_and_id[0]\tgi|$est_start_to_est_ID{$all_unique_id_starts[$i]}\t.\t$est_start_to_est_orient{$all_unique_id_starts[$i]}\n";
@@ -156,7 +167,7 @@ else
  {
   my @start_and_id = split(/_CustomSep_/, $all_unique_id_starts[$k]);
   #print "$start_and_id[0]\t$start_and_id[1]\n"; 
-  print OUTFILE "$est_start_to_chr{$all_unique_id_starts[$k]}\t$start_and_id[0]\t$start_and_id[0]\tgi|$est_start_to_est_ID{$all_unique_id_starts[$k]}\t.\t$est_start_to_est_orient{$all_unique_id_starts[$k]}\n";
+  print OUTFILE "$est_start_to_chr{$all_unique_id_starts[$k]}\t$start_and_id[0]\t$start_and_id[1]\tgi|$est_start_to_est_ID{$all_unique_id_starts[$k]}\t.\t$est_start_to_est_orient{$all_unique_id_starts[$k]}\n";
  } 
 }
 close INFILE_TRANS;
