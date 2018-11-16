@@ -17,14 +17,12 @@ Typical preliminary steps to install or update these packages are as follows
 #installing CRAN packages
 install.packages(c("gtools","knitr"))
 
-```{r eval=FALSE}                              
+```{r eval=FALSE}
 if (!requireNamespace("BiocManager", quietly=TRUE))
-   install.packages("BiocManager")
-#installing Bioconductor packages
-BiocManager::install(c("AnnotationHub", "BiocGenerics", "BiocParallel",
-"ENCODExplorer", "GenomicAlignments", "GenomeInfoDb",
-"GenomicRanges", "IRanges", "Rsamtools", "rtracklayer",
-"S4Vectors", "SummarizedExperiment"))
+    install.packages("BiocManager")
+BiocManager::install(c("AnnotationHub", "BiocGenerics", "BiocParallel", "ENCODExplorer",
+"GenomicAlignments", "GenomeInfoDb", "GenomicRanges", "IRanges", "methods", "Rsamtools",
+"rtracklayer", "S4Vectors", "SummarizedExperiment"))
 ```
 
 ## Obtaining TSRchitect
